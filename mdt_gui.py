@@ -1,5 +1,9 @@
+from array import array
 import ctypes
+from msilib import type_string
+from pickle import TRUE
 import sys
+from tkinter import N, Y
 import PySimpleGUI as sg
 import mdt_service as service
 import pyperclip
@@ -26,6 +30,10 @@ x_loc = 960
 y_loc = 540
 x_len = 400
 y_len = 600
+x1_loc = 960
+y1_loc = 540
+x2_loc = 960
+y2_loc = 540
 _ = i18n.t
 locale = "zh-CN"
 
@@ -75,6 +83,10 @@ def config_load():
     global web_search
     global x_loc
     global y_loc
+    global x1_loc
+    global y1_loc
+    global x2_loc
+    global y2_loc
     global x_len
     global y_len
     global cfg
@@ -95,6 +107,10 @@ def config_load():
         web_search = bool(int(config["web_search"]))
         x_loc = int(config["x_loc"])
         y_loc = int(config["y_loc"])
+        x1_loc = int(config["x1_loc"])
+        y1_loc = int(config["y1_loc"])
+        x2_loc = int(config["x2_loc"])
+        y2_loc = int(config["y2_loc"])
         x_len = int(config["x_len"])
         y_len = int(config["y_len"])
         locale = config["locale"]
@@ -112,6 +128,22 @@ def config_set(option: str, value: str):
 def i18n_set(locale: str):
     i18n.set("locale", locale)
 
+def make_sub_win(title: str, layout: array, sizeX: int, sizeY: int, locX: int, locY: int):
+    return sg.Window(
+        title,
+        layout,
+        default_element_size=(12, 1),
+        font=("Microsoft YaHei", font_size),
+        keep_on_top=keep_on_top,
+        resizable=True,
+        alpha_channel=window_alpha,
+        location=(locX, locY),
+        size=(sizeX, sizeY),
+        no_titlebar=True,
+        grab_anywhere=True,
+        debugger_enabled=False,
+        finalize=True
+    )
 
 def main():
     global sync_ui
@@ -140,45 +172,6 @@ def main():
     sg.theme("Dark")
     card_frame = [
         [
-            sg.Frame(
-                _("卡名"),
-                [
-                    [
-                        sg.T(
-                            text=_("等待检测"),
-                            key="-cn_name-",
-                            enable_events=True,
-                            expand_x=True,
-                        )
-                    ],
-                ],
-                title_color="#61E7DC",
-                expand_x=True,
-                tooltip=_("右键选择更多功能"),
-            )
-        ],
-        [
-            sg.pin(
-                sg.Frame(
-                    _("类型"),
-                    [
-                        [
-                            sg.T(
-                                key="-types-",
-                                enable_events=True,
-                                s=(40, 2),
-                            )
-                        ],
-                    ],
-                    title_color="#61E7DC",
-                    visible=show_types,
-                    key="-types_frame-",
-                    tooltip=_("右键选择更多功能"),
-                ),
-                expand_x=True,
-            )
-        ],
-        [
             sg.pin(
                 sg.Frame(
                     _("灵摆"),
@@ -197,8 +190,7 @@ def main():
                     ],
                     title_color="#61E7DC",
                     visible=False,
-                    key="-pdesc_frame-",
-                    tooltip=_("右键选择更多功能"),
+                    key="-pdesc_frame-"
                 ),
                 expand_x=True,
             )
@@ -222,8 +214,7 @@ def main():
                 ],
                 title_color="#61E7DC",
                 expand_x=True,
-                expand_y=True,
-                tooltip=_("右键选择更多功能"),
+                expand_y=True
             )
         ],
         [
@@ -241,8 +232,7 @@ def main():
                     ],
                     title_color="#61E7DC",
                     visible=show_en_name,
-                    key="-en_name_frame-",
-                    tooltip=_("右键选择更多功能"),
+                    key="-en_name_frame-"
                 ),
                 expand_x=True,
             )
@@ -262,8 +252,7 @@ def main():
                     ],
                     title_color="#61E7DC",
                     visible=show_jp_name,
-                    key="-jp_name_frame-",
-                    tooltip=_("右键选择更多功能"),
+                    key="-jp_name_frame-"
                 ),
                 expand_x=True,
             )
@@ -283,8 +272,7 @@ def main():
                     ],
                     title_color="#61E7DC",
                     visible=show_card_id,
-                    key="-id_frame-",
-                    tooltip=_("右键选择更多功能"),
+                    key="-id_frame-"
                 ),
                 expand_x=True,
             )
@@ -305,7 +293,7 @@ def main():
         ],
     ]
     layout = [[card_frame]]
-    window = sg.Window(
+    main_window = sg.Window(
         "MDT v0.2.8 GPLv3",
         layout,
         default_element_size=(12, 1),
@@ -317,19 +305,59 @@ def main():
         right_click_menu=right_click_menu,
         location=(x_loc, y_loc),
         size=(x_len, y_len),
-        no_titlebar=borderless,
+        no_titlebar=True,
         grab_anywhere=True,
         debugger_enabled=False,
+        finalize=True
     )
+
+    card_name_win = make_sub_win(
+        _("卡名"),
+        [
+            [
+                sg.T(
+                    text=_("等待检测"),
+                    key="-cn_name-",
+                    enable_events=True,
+                    expand_x=True,
+                    justification='center'
+                )
+            ],
+        ],
+        300,
+        45,
+        x1_loc,
+        y1_loc
+    )
+
+    card_type_win = make_sub_win(
+        _("类型"),
+        [
+            [
+                sg.pin(
+                    sg.T(
+                        key="-types-",
+                        enable_events=True,
+                        s=(40, 2),
+                    )
+                )
+            ]
+        ],
+        200,
+        60,
+        x2_loc,
+        y2_loc
+    )
+
     # 判断屏幕尺寸
-    screen = window.get_screen_dimensions()
+    screen = main_window.get_screen_dimensions()
     if screen[0] < x_loc or screen[1] < y_loc:
         config_set("x_loc", str(screen[0] / 2))
         config_set("y_len", str(screen[1] / 2))
         uac_reload(True)
 
     while True:
-        event, values = window.read(timeout=100)
+        window, event, values = sg.read_all_windows(timeout=100)
         cid = service.get_cid()
         # print(event, values)
         # 载入db
@@ -340,17 +368,22 @@ def main():
             cid_temp = cid
             try:
                 card_t = cards_db[str(cid)]
-                window["-cn_name-"].update(card_t["cn_name"])
-                window["-en_name-"].update(card_t["en_name"])
-                window["-jp_name-"].update(card_t["jp_name"])
-                window["-id-"].update(card_t["id"])
-                window["-types-"].update(card_t["text"]["types"])
+                card_name_win["-cn_name-"].update(card_t["cn_name"])
+                main_window["-en_name-"].update(card_t["en_name"])
+                main_window["-jp_name-"].update(card_t["jp_name"])
+                main_window["-id-"].update(card_t["id"])
+                type_string = card_t["text"]["types"]
+                split_index = type_string.find('\n')
+                type_str2 = type_string[:split_index]
+                split_index2 =  type_str2.find(']')+1
+                type_str3 = type_str2[:split_index2]+'\n'+ type_str2[split_index2:]
+                card_type_win["-types-"].update(type_str3)
                 if card_t["text"]["pdesc"]:
-                    window["-pdesc_frame-"].update(visible=True)
-                    window["-pdesc-"].update(card_t["text"]["pdesc"])
+                    main_window["-pdesc_frame-"].update(visible=True)
+                    main_window["-pdesc-"].update(card_t["text"]["pdesc"])
                 else:
-                    window["-pdesc_frame-"].update(visible=False)
-                window["-desc-"].update(card_t["text"]["desc"])
+                    main_window["-pdesc_frame-"].update(visible=False)
+                main_window["-desc-"].update(card_t["text"]["desc"])
             except Exception:
                 pass
                 # print("数据库中未查到该卡")
@@ -360,7 +393,7 @@ def main():
         elif event in text_keys:
             pyperclip.copy(window[event].get())
             if web_search:
-                id = window["-id-"].get()
+                id = main_window["-id-"].get()
                 if id:
                     if event == "-cn_name-":
                         webbrowser.open(f"https://ygocdb.com/?search={id}")
@@ -389,10 +422,10 @@ def main():
             restart()
         # 恢复默认
         elif event == _("恢复默认"):
-            window["-types_frame-"].update(visible=True)
-            window["-en_name_frame-"].update(visible=True)
-            window["-jp_name_frame-"].update(visible=True)
-            window["-id_frame-"].update(visible=True)
+            # card_type_win["-types_frame-"].update(visible=True)
+            main_window["-en_name_frame-"].update(visible=True)
+            main_window["-jp_name_frame-"].update(visible=True)
+            main_window["-id_frame-"].update(visible=True)
             web_search = True
             window.keep_on_top_set()
             window.set_alpha(0.96)
@@ -413,14 +446,21 @@ def main():
             # config_set("y_len", "600")
             # config_set("borderless", "0")
         elif event == _("保存窗口位置"):
-            win_loc = window.CurrentLocation()
-            win_size = window.size
+            win_loc = main_window.CurrentLocation()
+            win_size = main_window.size
             config_set("x_loc", str(win_loc[0]))
             config_set("y_loc", str(win_loc[1]))
             config_set("x_len", str(win_size[0]))
             config_set("y_len", str(win_size[1]))
+            win1_loc = card_name_win.CurrentLocation()
+            config_set("x1_loc", str(win1_loc[0]))
+            config_set("y1_loc", str(win1_loc[1]))
+            win2_loc = card_type_win.CurrentLocation()
+            config_set("x2_loc", str(win2_loc[0]))
+            config_set("y2_loc", str(win2_loc[1]))
         elif event == _("检查更新"):
-            webbrowser.open("https://github.com/SkywalkerJi/mdt/releases/latest")
+            webbrowser.open(
+                "https://github.com/SkywalkerJi/mdt/releases/latest")
         elif event == _("反和谐补丁"):
             webbrowser.open(
                 "https://www.nexusmods.com/yugiohmasterduel/mods/1"
@@ -473,7 +513,8 @@ def main():
                 ],
             ]
             option_checkbox = [
-                [sg.Checkbox(key="-keep_on_top-", text=_("置顶"), enable_events=True)],
+                [sg.Checkbox(key="-keep_on_top-", text=_("置顶"),
+                             enable_events=True)],
                 [
                     sg.Checkbox(
                         key="-show_types-",
@@ -592,19 +633,21 @@ def main():
                 config_set("font_size", str(int(vals["-font_size-"])))
             # 显示额外卡名
             elif ev == "-show_en_name-":
-                window["-en_name_frame-"].update(visible=vals["-show_en_name-"])
+                main_window["-en_name_frame-"].update(
+                    visible=vals["-show_en_name-"])
                 config_set("show_en_name", str(int(vals["-show_en_name-"])))
             # 显示类型
             elif ev == "-show_jp_name-":
-                window["-jp_name_frame-"].update(visible=vals["-show_jp_name-"])
+                main_window["-jp_name_frame-"].update(
+                    visible=vals["-show_jp_name-"])
                 config_set("show_jp_name", str(int(vals["-show_jp_name-"])))
             # 显示类型
             elif ev == "-show_card_id-":
-                window["-id_frame-"].update(visible=vals["-show_card_id-"])
+                main_window["-id_frame-"].update(visible=vals["-show_card_id-"])
                 config_set("show_card_id", str(int(vals["-show_card_id-"])))
             # 显示类型
             elif ev == "-show_types-":
-                window["-types_frame-"].update(visible=vals["-show_types-"])
+                #card_type_win["-types_frame-"].update(visible=vals["-show_types-"])
                 config_set("show_types", str(int(vals["-show_types-"])))
             # 无边框
             elif ev == "-borderless-":
@@ -628,7 +671,8 @@ def main():
                 else:
                     set_ui_lock(settings_win, False)
             elif ev == _("导出卡组"):
-                now = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
+                now = time.strftime(
+                    "%Y%m%d%H%M%S", time.localtime(time.time()))
                 deck = service.get_deck_dict()
                 deck_string = service.get_deck_string(locale)
                 ydk = "#created by MDT https://github.com/SkywalkerJi/mdt \n#main\n"
